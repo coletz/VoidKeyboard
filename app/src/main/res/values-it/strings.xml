@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="subtype_it_it">Italiano (IT)</string>
+    <string name="subtype_es_es">Spagnolo (ES)</string>
+    <string name="subtype_es_ext">Spagnolo (Esteso)</string>
+    <string name="subtype_full">Completo (tutti i caratteri)</string>
+    <string name="settings_title">Impostazioni</string>
+    <string name="settings_selected_language">Lingua Selezionata</string>
+    <string name="enabled_languages_setting">Lingue abilitate</string>
+    <string name="enabled_languages_setting_desc">Lingua da usare per i tasti alternativi. Se manca qualcosa, apri una issue su https://github.com/coletz/voidkeyboard</string>
+    <string name="other_app_selected_locale">Altra app: %1$s (%2$s)</string>
+    <string name="ime_unknown">Sconosciuto</string>
+    <string name="ime_changed_toast">Cambiato in: %1$s</string>
+</resources>

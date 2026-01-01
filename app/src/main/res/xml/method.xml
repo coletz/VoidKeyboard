@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<input-method xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="dev.coletz.voidkeyboard.SettingsActivity"
+    android:supportsSwitchingToNextInputMethod="true">
+    <subtype
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeLocale="it_IT"
+        android:label="@string/subtype_it_it" />
+    <subtype
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeLocale="es_ES"
+        android:label="@string/subtype_es_es" />
+    <subtype
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeLocale="es_EXT"
+        android:label="@string/subtype_es_ext" />
+    <subtype
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeLocale="full"
+        android:label="@string/subtype_full" />
+</input-method>

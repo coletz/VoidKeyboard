@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name" translatable="false">Void Keyboard</string>
+    <string name="ime_name" translatable="false">@string/app_name</string>
+    <string name="subtype_it_it">Italian (IT)</string>
+    <string name="subtype_es_es">Spanish (ES)</string>
+    <string name="subtype_es_ext">Spanish (Extended)</string>
+    <string name="subtype_full">Full (all chars)</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_selected_language">Selected Language</string>
+    <string name="enabled_languages_setting">Enabled languages</string>
+    <string name="enabled_languages_setting_desc">Language to use for alternative keys. If something is missing, open an issue at https://github.com/coletz/voidkeyboard</string>
+    <string name="other_app_selected_locale">Other app: %1$s (%2$s)</string>
+    <string name="ime_unknown">Unknown</string>
+    <string name="ime_changed_toast">Switched to: %1$s</string>
+</resources>
