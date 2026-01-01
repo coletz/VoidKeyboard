@@ -336,7 +336,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     override fun onCurrentInputMethodSubtypeChanged(newSubtype: InputMethodSubtype?) {
         super.onCurrentInputMethodSubtypeChanged(newSubtype)
 
-        val langDisplayNgitame = AlternativesProvider.getAvailableLanguages(this)
+        val langDisplayName = AlternativesProvider.getAvailableLanguages(this)
             .firstOrNull { it.locale == newSubtype?.locale }
             ?.displayName
             ?: return
