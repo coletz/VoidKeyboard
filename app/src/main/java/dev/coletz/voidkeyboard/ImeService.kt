@@ -11,6 +11,7 @@ import android.speech.SpeechRecognizer
 import android.text.InputType
 import android.view.KeyEvent
 import android.view.inputmethod.CursorAnchorInfo
+import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodSubtype
 import android.widget.Toast
@@ -118,6 +119,14 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             }
         }
 
+        // Hide sym keyboard when any physical key is pressed (except modifiers and SYM itself)
+        if (symKeyboardVisible && keyCode != KeyEvent.KEYCODE_SYM
+            && keyCode != KeyEvent.KEYCODE_ALT_LEFT && keyCode != KeyEvent.KEYCODE_ALT_RIGHT
+            && !isShiftKey(keyCode)) {
+            symKeyboardVisible = false
+            requestHideSelf(0)
+        }
+
         if (keyCode == KeyEvent.KEYCODE_SYM) {
             "SYM key DOWN detected".log()
             symKeyState = SymKeyState.Down
@@ -137,10 +146,20 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
         if (symKeyHeld) {
             symKeyState = SymKeyState.UsedAsModifier
-            if (keyCode == KeyEvent.KEYCODE_SPACE) {
-                inputMethodManager.showInputMethodPicker()
-            } else {
-                sendCtrlKey(keyCode)
+            when (keyCode) {
+                KeyEvent.KEYCODE_SPACE -> inputMethodManager.showInputMethodPicker()
+
+                KeyEvent.KEYCODE_T -> sendKey(KeyEvent.KEYCODE_DPAD_UP)
+                KeyEvent.KEYCODE_F -> sendKey(KeyEvent.KEYCODE_DPAD_LEFT)
+                KeyEvent.KEYCODE_G -> sendKey(KeyEvent.KEYCODE_DPAD_DOWN)
+                KeyEvent.KEYCODE_H -> sendKey(KeyEvent.KEYCODE_DPAD_RIGHT)
+
+                KeyEvent.KEYCODE_R -> sendKey(KeyEvent.KEYCODE_MOVE_HOME)
+                KeyEvent.KEYCODE_Y -> sendKey(KeyEvent.KEYCODE_MOVE_END)
+
+                KeyEvent.KEYCODE_W -> selectCurrentWord()
+
+                else -> sendCtrlKey(keyCode)
             }
             return true
         }
@@ -228,6 +247,38 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         val now = System.currentTimeMillis()
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, KeyEvent.META_CTRL_ON))
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, KeyEvent.META_CTRL_ON))
+    }
+
+    private fun sendKey(keyCode: Int) {
+        val ic = currentInputConnection ?: return
+        val now = System.currentTimeMillis()
+        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, 0))
+        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, 0))
+    }
+
+    private fun selectCurrentWord() {
+        val ic = currentInputConnection ?: return
+        val extracted = ic.getExtractedText(ExtractedTextRequest(), 0) ?: return
+        val text = extracted.text ?: return
+        val cursorPos = extracted.selectionStart
+
+        if (cursorPos < 0 || cursorPos > text.length) return
+
+        // Find word start
+        var start = cursorPos
+        while (start > 0 && text[start - 1].isLetterOrDigit()) {
+            start--
+        }
+
+        // Find word end
+        var end = cursorPos
+        while (end < text.length && text[end].isLetterOrDigit()) {
+            end++
+        }
+
+        if (start < end) {
+            ic.setSelection(start, end)
+        }
     }
 
     private fun handleShiftDown() {
