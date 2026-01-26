@@ -12,4 +12,10 @@
     <string name="other_app_selected_locale">Other app: %1$s (%2$s)</string>
     <string name="ime_unknown">Unknown</string>
     <string name="ime_changed_toast">Switched to: %1$s</string>
+    <string name="voice_input_not_available">Voice input not available</string>
+    <string name="voice_no_match">No speech detected</string>
+    <string name="voice_audio_error">Audio error</string>
+    <string name="microphone_permission_title">Microphone Permission Required</string>
+    <string name="microphone_permission_message">Tap to grant microphone permission for voice input</string>
+    <string name="test_label">Use this field for testing the keyboard</string>
 </resources>

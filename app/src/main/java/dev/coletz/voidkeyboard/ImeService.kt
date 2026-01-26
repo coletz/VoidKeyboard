@@ -1,8 +1,13 @@
 package dev.coletz.voidkeyboard
 
+import android.content.Intent
 import android.inputmethodservice.InputMethodService
 import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.text.InputType
 import android.view.KeyEvent
 import android.view.inputmethod.CursorAnchorInfo
@@ -10,6 +15,7 @@ import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodSubtype
 import android.widget.Toast
 import dev.coletz.voidkeyboard.mapping.AlternativesProvider
+import dev.coletz.voidkeyboard.mapping.CustomKeyCode
 import dev.coletz.voidkeyboard.mapping.KeyCodeMapper
 
 @Suppress("DEPRECATION")
@@ -30,6 +36,8 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private var currentAlternatives: List<Char>? = null
     private var keyboardView: KeyboardView? = null
     private var cursorAnchorInfo: CursorAnchorInfo? = null
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var voiceInputDialog: VoiceInputDialog? = null
 
     private fun getCurrentAlternativesMap(): Map<Char, AltKeyCharacters> {
         return AlternativesProvider.getAltKeysMap(this, ImeUtils.getSelectedLocale(this))
@@ -119,6 +127,11 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
         if (keyCode == KeyEvent.KEYCODE_ALT_LEFT || keyCode == KeyEvent.KEYCODE_ALT_RIGHT) {
             altKeyDown = true
+            return true
+        }
+
+        if (keyCode == CustomKeyCode.KEYCODE_MICROPHONE) {
+            launchVoiceInput()
             return true
         }
 
@@ -313,8 +326,67 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             Keyboard.KEYCODE_DONE -> ic.sendKeyEvent(
                 KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER)
             )
+            CustomKeyCode.KEYCODE_MICROPHONE -> launchVoiceInput()
             else -> commitCharacter(primaryCode.toChar())
         }
+    }
+
+    private fun launchVoiceInput() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            Toast.makeText(this, getString(R.string.voice_input_not_available), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        speechRecognizer?.destroy()
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+            setRecognitionListener(object : RecognitionListener {
+                override fun onResults(results: Bundle?) {
+                    dismissVoiceInputDialog()
+                    val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    matches?.firstOrNull()?.let { text ->
+                        currentInputConnection?.commitText(text, 1)
+                    }
+                }
+
+                override fun onError(error: Int) {
+                    dismissVoiceInputDialog()
+                    if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                        MicrophonePermissionActivity.start(this@ImeService)
+                        return
+                    }
+                    val message = when (error) {
+                        SpeechRecognizer.ERROR_NO_MATCH -> getString(R.string.voice_no_match)
+                        SpeechRecognizer.ERROR_AUDIO -> getString(R.string.voice_audio_error)
+                        else -> getString(R.string.voice_input_not_available)
+                    }
+                    Toast.makeText(this@ImeService, message, Toast.LENGTH_SHORT).show()
+                }
+
+                override fun onReadyForSpeech(params: Bundle?) {}
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onEndOfSpeech() {}
+                override fun onPartialResults(partialResults: Bundle?) {}
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+            })
+        }
+
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        }
+        speechRecognizer?.startListening(intent)
+        showVoiceInputDialog()
+    }
+
+    private fun showVoiceInputDialog() {
+        voiceInputDialog?.dismiss()
+        voiceInputDialog = VoiceInputDialog(this).also { it.show() }
+    }
+
+    private fun dismissVoiceInputDialog() {
+        voiceInputDialog?.dismiss()
+        voiceInputDialog = null
     }
 
     override fun onText(text: CharSequence?) {
@@ -329,6 +401,9 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     override fun swipeUp() {}
 
     override fun onDestroy() {
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+        dismissVoiceInputDialog()
         dismissAlternativesPopup()
         super.onDestroy()
     }
