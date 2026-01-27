@@ -139,7 +139,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             return true
         }
 
-        if (keyCode == CustomKeyCode.KEYCODE_MICROPHONE) {
+        if (keyCode == CustomKeyCode.KEYCODE_MICROPHONE && !altKeyDown) {
             launchVoiceInput()
             return true
         }
