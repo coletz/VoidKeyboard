@@ -140,7 +140,11 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         }
 
         if (keyCode == CustomKeyCode.KEYCODE_MICROPHONE && !altKeyDown) {
-            launchVoiceInput()
+            if (voiceInputDialog != null) {
+                stopVoiceInput()
+            } else {
+                launchVoiceInput()
+            }
             return true
         }
 
@@ -438,6 +442,11 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private fun dismissVoiceInputDialog() {
         voiceInputDialog?.dismiss()
         voiceInputDialog = null
+    }
+
+    private fun stopVoiceInput() {
+        speechRecognizer?.stopListening()
+        dismissVoiceInputDialog()
     }
 
     override fun onText(text: CharSequence?) {
