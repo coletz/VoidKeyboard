@@ -13,6 +13,7 @@ object AlternativesProvider {
     )
 
     private var cachedLanguages: List<LanguageOption>? = null
+    private var cachedDefaultAltKeys: Map<Char, AltKeyCharacters>? = null
 
     fun getAvailableLanguages(context: Context): List<LanguageOption> {
         cachedLanguages?.let { return it }
@@ -39,6 +40,8 @@ object AlternativesProvider {
     }
 
     private fun getDefaultAltKeys(context: Context): Map<Char, AltKeyCharacters> {
+        cachedDefaultAltKeys?.let { return it }
+
         return getAvailableLanguages(context)
             .mapNotNull { it.mapping }
             .flatMap { it.entries }
@@ -46,6 +49,7 @@ object AlternativesProvider {
             .mapValues { (_, charLists) ->
                 AltKeyCharacters(charLists.flatten().distinct())
             }
+            .also { cachedDefaultAltKeys = it }
     }
 
     fun getAltKeysMap(context: Context, locale: String?): Map<Char, AltKeyCharacters> {
