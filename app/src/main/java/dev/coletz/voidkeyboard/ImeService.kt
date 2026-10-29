@@ -9,7 +9,6 @@ import android.os.SystemClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import android.text.InputType
 import android.view.KeyEvent
 import android.view.inputmethod.CursorAnchorInfo
 import android.view.inputmethod.ExtractedTextRequest
@@ -362,38 +361,11 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     }
 
     private fun shouldCapitalize(): Boolean {
-        if (!isAutoCapitalizationAllowed()) return shiftState != ShiftState.OFF
         if (shiftState != ShiftState.OFF) return true
-
         val ic = currentInputConnection ?: return false
-        val textBefore = ic.getTextBeforeCursor(2, 0) ?: return true
-
-        if (textBefore.isEmpty()) return true // No character before, start of the input
-        if (textBefore.isBlank()) return false // There are 1/2 spaces, this is not the start
-
-        val lastChar = textBefore.lastOrNull() ?: return true
-        if (lastChar.isWhitespace() && textBefore.length >= 2) {
-            val charBeforeSpace = textBefore[textBefore.length - 2]
-            return charBeforeSpace in listOf('.', '!', '?')
-        }
-        return false
-    }
-
-    private fun isAutoCapitalizationAllowed(): Boolean {
-        val editorInfo = currentInputEditorInfo ?: return true
-        val inputType = editorInfo.inputType and InputType.TYPE_MASK_CLASS
-        val variation = editorInfo.inputType and InputType.TYPE_MASK_VARIATION
-
-        if (inputType != InputType.TYPE_CLASS_TEXT) return true
-
-        return variation !in listOf(
-            InputType.TYPE_TEXT_VARIATION_PASSWORD,
-            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
-            InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
-            InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
-            InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS,
-            InputType.TYPE_TEXT_VARIATION_PERSON_NAME
-        )
+        val inputType = currentInputEditorInfo?.inputType ?: return false
+        // Honors the editor's textCapSentences/textCapWords/textCapCharacters flags
+        return ic.getCursorCapsMode(inputType) != 0
     }
 
     override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
