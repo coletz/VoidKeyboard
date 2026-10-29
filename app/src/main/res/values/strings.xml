@@ -22,7 +22,5 @@
     <string name="overlay_permission_dialog_message">To show the accent and voice input popups, Void Keyboard needs the permission to display over other apps.</string>
     <string name="open_settings">Open settings</string>
     <string name="not_now">Not now</string>
-    <string name="microphone_permission_title">Microphone Permission Required</string>
-    <string name="microphone_permission_message">Tap to grant microphone permission for voice input</string>
     <string name="test_label">Use this field for testing the keyboard</string>
 </resources>

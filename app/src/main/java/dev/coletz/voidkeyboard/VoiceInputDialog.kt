@@ -70,7 +70,7 @@ class VoiceInputDialog(private val context: Context) {
             decorView.setPadding(0, 0, 0, 0)
             setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
             attributes = attributes.apply {
-                y = 48
+                y = popupOffsetY()
             }
         }
 
@@ -89,4 +89,10 @@ class VoiceInputDialog(private val context: Context) {
     }
 
     fun isShowing(): Boolean = dialog?.isShowing == true
+
+    private fun popupOffsetY(): Int = (POPUP_OFFSET_Y_DP * context.resources.displayMetrics.density).toInt()
+
+    private companion object {
+        const val POPUP_OFFSET_Y_DP = 32
+    }
 }

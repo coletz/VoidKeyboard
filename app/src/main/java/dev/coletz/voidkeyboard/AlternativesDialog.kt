@@ -1,5 +1,6 @@
 package dev.coletz.voidkeyboard
 
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
@@ -21,6 +22,8 @@ class AlternativesDialog(
     private var dialog: Dialog? = null
     private var windowContext: Context? = null
 
+    // cursorX is an absolute screen coordinate, so LEFT (not START) is correct in RTL locales too
+    @SuppressLint("RtlHardcoded")
     fun show() {
         if (!OverlayPermissionHelper.hasPermission(context)) {
             OverlayPermissionHelper.requestPermission(context)
@@ -91,12 +94,12 @@ class AlternativesDialog(
                 setGravity(Gravity.BOTTOM or Gravity.LEFT)
                 attributes = attributes.apply {
                     x = cursorX
-                    y = 48
+                    y = popupOffsetY()
                 }
             } else {
                 setGravity(Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
                 attributes = attributes.apply {
-                    y = 48
+                    y = popupOffsetY()
                 }
             }
         }
@@ -116,4 +119,10 @@ class AlternativesDialog(
     }
 
     fun isShowing(): Boolean = dialog?.isShowing == true
+
+    private fun popupOffsetY(): Int = (POPUP_OFFSET_Y_DP * context.resources.displayMetrics.density).toInt()
+
+    private companion object {
+        const val POPUP_OFFSET_Y_DP = 32
+    }
 }
