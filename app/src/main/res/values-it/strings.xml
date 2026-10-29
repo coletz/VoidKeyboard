@@ -14,6 +14,13 @@
     <string name="voice_input_not_available">Input vocale non disponibile</string>
     <string name="voice_no_match">Nessun parlato rilevato</string>
     <string name="voice_audio_error">Errore audio</string>
+    <string name="overlay_permission_channel_name">Permesso di sovrapposizione</string>
+    <string name="overlay_permission_channel_desc">Promemoria per concedere il permesso richiesto dai popup della tastiera</string>
+    <string name="overlay_permission_title">Permesso di sovrapposizione richiesto</string>
+    <string name="overlay_permission_notification_text">Tocca per consentire i popup degli accenti e dell\'input vocale</string>
+    <string name="overlay_permission_dialog_message">Per mostrare i popup degli accenti e dell\'input vocale, Void Keyboard ha bisogno del permesso di mostrare sopra altre app.</string>
+    <string name="open_settings">Apri impostazioni</string>
+    <string name="not_now">Non ora</string>
     <string name="microphone_permission_title">Permesso microfono richiesto</string>
     <string name="microphone_permission_message">Tocca per concedere il permesso del microfono per l\'input vocale</string>
     <string name="test_label">Use this field for testing the keyboard</string>

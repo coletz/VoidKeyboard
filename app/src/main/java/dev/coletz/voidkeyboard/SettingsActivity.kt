@@ -1,16 +1,25 @@
 package dev.coletz.voidkeyboard
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var languageValue: TextView
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { askOverlayPermission() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +37,36 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<LinearLayout>(R.id.selected_language_setting).setOnClickListener {
             inputMethodManager.showInputMethodPicker()
         }
+
+        if (savedInstanceState == null) {
+            requestPermissions()
+        }
+    }
+
+    // Notifications first: without them the keyboard can't remind about the overlay permission later
+    private fun requestPermissions() {
+        val notificationsGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (notificationsGranted) {
+            askOverlayPermission()
+        } else {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // The overlay permission has no runtime dialog, it must be granted from the system settings
+    private fun askOverlayPermission() {
+        if (OverlayPermissionHelper.hasPermission(this)) return
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.overlay_permission_title)
+            .setMessage(R.string.overlay_permission_dialog_message)
+            .setPositiveButton(R.string.open_settings) { _, _ -> OverlayPermissionHelper.openSettings(this) }
+            .setNegativeButton(R.string.not_now, null)
+            .show()
     }
 
     override fun onResume() {
