@@ -81,6 +81,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         shiftState = ShiftState.OFF
         trackedKeys.clear()
         symKeyState = SymKeyState.Up
+        dismissAlternativesPopup()
         if (symKeyboardVisible) {
             symKeyboardVisible = false
             requestHideSelf(0)
@@ -242,6 +243,12 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
         trackedKeys[keyCode] = KeyState.LONG_PRESS_HANDLED
 
+        // Without the overlay permission the popup can't be shown, so keep the committed character
+        if (!OverlayPermissionHelper.hasPermission(this)) {
+            OverlayPermissionHelper.requestPermission(this)
+            return true
+        }
+
         // Delete the character that was committed on key down
         currentInputConnection?.deleteSurroundingText(1, 0)
 
@@ -321,7 +328,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     }
 
     private fun showAlternativesPopup(alternatives: AltKeyCharacters) {
-        val cursorX = cursorAnchorInfo?.insertionMarkerHorizontal?.toInt()
+        val cursorX = getCursorScreenX()
         val alternativeChars = if (shouldCapitalize()) alternatives.uppercase else alternatives.lowercase
         currentAlternatives = alternativeChars
         alternativesDialog = AlternativesDialog(
@@ -330,6 +337,16 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             cursorX = cursorX,
             onCharacterSelected = { char -> commitCharacter(char) }
         ).also { it.show() }
+    }
+
+    private fun getCursorScreenX(): Int? {
+        val info = cursorAnchorInfo ?: return null
+        val x = info.insertionMarkerHorizontal
+        if (x.isNaN()) return null
+        // insertionMarkerHorizontal is in the editor's local coordinates
+        val point = floatArrayOf(x, info.insertionMarkerBaseline)
+        info.matrix.mapPoints(point)
+        return point[0].toInt()
     }
 
     private fun dismissAlternativesPopup() {
