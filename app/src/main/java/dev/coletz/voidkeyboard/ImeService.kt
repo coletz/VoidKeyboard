@@ -22,7 +22,8 @@ import dev.coletz.voidkeyboard.mapping.KeyCodeMapper
 @Suppress("DEPRECATION")
 class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
-    private enum class KeyState { TRACKING, LONG_PRESS_HANDLED }
+    // CONSUMED: the key down was handled by the IME, so the matching key up must not reach the app
+    private enum class KeyState { TRACKING, LONG_PRESS_HANDLED, CONSUMED }
 
     private var shiftState = ShiftState.OFF
     private var lastShiftPressTime = 0L
@@ -92,7 +93,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         "onKeyDown: keyCode=$keyCode (${KeyEvent.keyCodeToString(keyCode)})".log()
 
         val keyState = trackedKeys[keyCode]
-        if (keyState == KeyState.LONG_PRESS_HANDLED) {
+        if (keyState == KeyState.LONG_PRESS_HANDLED || keyState == KeyState.CONSUMED) {
             return true
         }
         if (keyState == KeyState.TRACKING && event.repeatCount > 0) {
@@ -105,17 +106,25 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
                 return true
             }
             val index = KeyCodeMapper.toChar(keyCode, useSecondary = altKeyDown)?.digitToIntOrNull()
-            if (index != null && index in 1..9) {
-                currentAlternatives?.getOrNull(index - 1)?.let { commitCharacter(it) }
-            }
+            val selected = index?.let { currentAlternatives?.getOrNull(it - 1) }
             dismissAlternativesPopup()
-            return true
+            if (selected != null) {
+                trackedKeys[keyCode] = KeyState.CONSUMED
+                commitCharacter(selected)
+                return true
+            }
+            // BACK only closes the popup, any other key is processed normally
+            if (keyCode == KeyEvent.KEYCODE_BACK) {
+                trackedKeys[keyCode] = KeyState.CONSUMED
+                return true
+            }
         }
 
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (symKeyboardVisible) {
                 symKeyboardVisible = false
                 requestHideSelf(0)
+                trackedKeys[keyCode] = KeyState.CONSUMED
                 return true
             }
         }
@@ -225,6 +234,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         return when (keyState) {
             KeyState.TRACKING -> true
             KeyState.LONG_PRESS_HANDLED -> true
+            KeyState.CONSUMED -> true
             null -> super.onKeyUp(keyCode, event)
         }
     }
