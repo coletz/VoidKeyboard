@@ -5,6 +5,7 @@ import android.inputmethodservice.InputMethodService
 import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
 import android.os.Bundle
+import android.os.SystemClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -169,14 +170,16 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         }
 
         if (isShiftKey(keyCode)) {
-            handleShiftDown()
+            if (event.repeatCount == 0) {
+                handleShiftDown()
+            }
             return super.onKeyDown(keyCode, event)
         }
 
         val char = KeyCodeMapper.toChar(keyCode, useSecondary = altKeyDown)?.lowercaseChar()
-        if (char != null && event.repeatCount == 0) {
+        if (char != null) {
             // Track for long press only if character has alternatives
-            if (!altKeyDown && getCurrentAlternativesMap().containsKey(char)) {
+            if (event.repeatCount == 0 && !altKeyDown && getCurrentAlternativesMap().containsKey(char)) {
                 trackedKeys[keyCode] = KeyState.TRACKING
                 event.startTracking()
             }
@@ -202,7 +205,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             return true
         }
 
-        if (keyCode == KeyEvent.KEYCODE_ALT_LEFT) {
+        if (keyCode == KeyEvent.KEYCODE_ALT_LEFT || keyCode == KeyEvent.KEYCODE_ALT_RIGHT) {
             altKeyDown = false
             return true
         }
@@ -248,14 +251,14 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
     private fun sendCtrlKey(keyCode: Int) {
         val ic = currentInputConnection ?: return
-        val now = System.currentTimeMillis()
+        val now = SystemClock.uptimeMillis()
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, KeyEvent.META_CTRL_ON))
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, KeyEvent.META_CTRL_ON))
     }
 
     private fun sendKey(keyCode: Int) {
         val ic = currentInputConnection ?: return
-        val now = System.currentTimeMillis()
+        val now = SystemClock.uptimeMillis()
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, 0))
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, 0))
     }
@@ -264,6 +267,8 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         val ic = currentInputConnection ?: return
         val extracted = ic.getExtractedText(ExtractedTextRequest(), 0) ?: return
         val text = extracted.text ?: return
+        // Offsets in ExtractedText are relative to startOffset, setSelection wants absolute ones
+        val offset = extracted.startOffset
         val cursorPos = extracted.selectionStart
 
         if (cursorPos < 0 || cursorPos > text.length) return
@@ -281,7 +286,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         }
 
         if (start < end) {
-            ic.setSelection(start, end)
+            ic.setSelection(offset + start, offset + end)
         }
     }
 
@@ -378,9 +383,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         val ic = currentInputConnection ?: return
         when (primaryCode) {
             Keyboard.KEYCODE_DELETE -> ic.deleteSurroundingText(1, 0)
-            Keyboard.KEYCODE_DONE -> ic.sendKeyEvent(
-                KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER)
-            )
+            Keyboard.KEYCODE_DONE -> sendKey(KeyEvent.KEYCODE_ENTER)
             CustomKeyCode.KEYCODE_MICROPHONE -> launchVoiceInput()
             else -> commitCharacter(primaryCode.toChar())
         }
