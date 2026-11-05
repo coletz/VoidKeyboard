@@ -18,7 +18,7 @@ import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodSubtype
 import android.widget.Toast
 import dev.coletz.voidkeyboard.mapping.AlternativesProvider
-import dev.coletz.voidkeyboard.mapping.CustomKeyCode
+import dev.coletz.voidkeyboard.mapping.DeviceKeyboard
 import dev.coletz.voidkeyboard.mapping.KeyCodeMapper
 
 @Suppress("DEPRECATION")
@@ -163,7 +163,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             return true
         }
 
-        if (keyCode == CustomKeyCode.KEYCODE_MICROPHONE && !altKeyDown) {
+        if (keyCode == DeviceKeyboard.microphoneKeyCode && !altKeyDown) {
             if (voiceInputDialog != null) {
                 stopVoiceInput()
             } else {
@@ -406,7 +406,6 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         when (primaryCode) {
             Keyboard.KEYCODE_DELETE -> ic.deleteSurroundingText(1, 0)
             Keyboard.KEYCODE_DONE -> sendKey(KeyEvent.KEYCODE_ENTER)
-            CustomKeyCode.KEYCODE_MICROPHONE -> launchVoiceInput()
             else -> commitCharacter(primaryCode.toChar())
         }
     }
