@@ -5,5 +5,7 @@ import android.util.Log
 private const val TAG = "VoidKeyboard"
 
 fun Any?.log() {
-    Log.d(TAG, this?.toString() ?: "[NULL]")
+    if (BuildConfig.DEBUG) {
+        Log.d(TAG, this?.toString() ?: "[NULL]")
+    }
 }
