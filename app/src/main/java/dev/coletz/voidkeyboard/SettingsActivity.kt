@@ -7,14 +7,21 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.graphics.drawable.GradientDrawable
 import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
+import com.google.android.material.R as MaterialR
+import com.google.android.material.color.DynamicColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputLayout
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -26,10 +33,28 @@ class SettingsActivity : AppCompatActivity() {
     ) { askOverlayPermission() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        DynamicColors.applyToActivityIfAvailable(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
         title = getString(R.string.settings_title)
+
+        // Edge-to-edge (enforced from Android 15): keep the last item above the navigation bar
+        val root = findViewById<View>(R.id.settings_root)
+        val rootPaddingBottom = root.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            view.updatePadding(bottom = rootPaddingBottom + insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom)
+            insets
+        }
+
+        styleGroupedItems(
+            findViewById(R.id.enabled_languages_setting),
+            findViewById(R.id.selected_language_setting),
+            findViewById(R.id.key_navigation_setting)
+        )
+        if (!MaterialUi.effectsEnabled) {
+            findViewById<TextInputLayout>(R.id.test_input_layout).isHintAnimationEnabled = false
+        }
 
         languageValue = findViewById(R.id.language_value)
         updateLanguageDisplay()
@@ -69,12 +94,30 @@ class SettingsActivity : AppCompatActivity() {
     private fun askOverlayPermission() {
         if (OverlayPermissionHelper.hasPermission(this)) return
 
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.overlay_permission_title)
             .setMessage(R.string.overlay_permission_dialog_message)
             .setPositiveButton(R.string.open_settings) { _, _ -> OverlayPermissionHelper.openSettings(this) }
             .setNegativeButton(R.string.not_now, null)
             .show()
+    }
+
+    // Material 3 Expressive grouped list: large outer corners on the group, small ones between items
+    private fun styleGroupedItems(vararg items: View) {
+        val outer = MaterialUi.dp(this, GROUP_OUTER_CORNER_DP)
+        val inner = MaterialUi.dp(this, GROUP_INNER_CORNER_DP)
+        items.forEachIndexed { index, item ->
+            val top = if (index == 0) outer else inner
+            val bottom = if (index == items.lastIndex) outer else inner
+            val radii = floatArrayOf(top, top, top, top, bottom, bottom, bottom, bottom)
+            fun shape(colorAttr: Int) = GradientDrawable().apply {
+                setColor(MaterialUi.color(this@SettingsActivity, colorAttr))
+                cornerRadii = radii
+            }
+            item.background = MaterialUi.pressableBackground(this, shape(MaterialR.attr.colorSurfaceContainer)) {
+                shape(MaterialR.attr.colorSecondaryContainer)
+            }
+        }
     }
 
     override fun onResume() {
@@ -130,5 +173,10 @@ class SettingsActivity : AppCompatActivity() {
                 service.packageName == packageName && service.name == KeyNavigationService::class.java.name
             }
         keyNavigationStatus.setText(if (enabled) R.string.key_navigation_enabled else R.string.key_navigation_disabled)
+    }
+
+    private companion object {
+        const val GROUP_OUTER_CORNER_DP = 24f
+        const val GROUP_INNER_CORNER_DP = 4f
     }
 }

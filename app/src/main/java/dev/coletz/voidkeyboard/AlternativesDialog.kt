@@ -3,13 +3,13 @@ package dev.coletz.voidkeyboard
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.WindowManager
+import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.google.android.material.R as MaterialR
 
 class AlternativesDialog(
     private val context: Context,
@@ -34,40 +34,8 @@ class AlternativesDialog(
         val overlayContext = OverlayPermissionHelper.createOverlayContext(context)
         windowContext = overlayContext
 
-        val dialog = Dialog(overlayContext, android.R.style.Theme_DeviceDefault_Light_Dialog_NoActionBar)
-
-        val borderDrawable = GradientDrawable().apply {
-            setColor(Color.WHITE)
-            setStroke(1, Color.BLACK)
-            cornerRadius = 16f
-        }
-
-        val scrollView = HorizontalScrollView(overlayContext).apply {
-            isHorizontalScrollBarEnabled = false
-            background = borderDrawable
-            setPadding(8, 4, 8, 4)
-        }
-
-        val container = LinearLayout(overlayContext).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-        }
-
-        alternatives.forEach { char ->
-            val textView = TextView(overlayContext).apply {
-                text = char.toString()
-                textSize = 20f
-                setPadding(12, 0, 12, 0)
-                setOnClickListener {
-                    onCharacterSelected(char)
-                    dismiss()
-                }
-            }
-            container.addView(textView)
-        }
-
-        scrollView.addView(container)
-        dialog.setContentView(scrollView)
+        val dialog = Dialog(overlayContext, android.R.style.Theme_DeviceDefault_Dialog_NoActionBar)
+        dialog.setContentView(createContent(MaterialUi.themedContext(overlayContext)))
 
         dialog.window?.apply {
             setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
@@ -80,11 +48,13 @@ class AlternativesDialog(
                 WindowManager.LayoutParams.WRAP_CONTENT
             )
             decorView.setPadding(0, 0, 0, 0)
+            if (!MaterialUi.effectsEnabled) setWindowAnimations(0)
 
             if (cursorX != null) {
                 setGravity(Gravity.BOTTOM or Gravity.LEFT)
                 attributes = attributes.apply {
-                    x = cursorX
+                    // The card sits inside the shadow padding, so shift the window to keep it on the cursor
+                    x = cursorX - shadowSpace()
                     y = popupOffsetY()
                 }
             } else {
@@ -103,6 +73,68 @@ class AlternativesDialog(
         this.dialog = dialog
     }
 
+    private fun createContent(context: Context): FrameLayout {
+        val cardPadding = MaterialUi.dp(context, CARD_PADDING_DP)
+        val card = HorizontalScrollView(context).apply {
+            isHorizontalScrollBarEnabled = false
+            background = MaterialUi.popupSurface(context)
+            clipToOutline = true
+            if (MaterialUi.effectsEnabled) elevation = MaterialUi.dp(context, MaterialUi.POPUP_ELEVATION_DP)
+            setPadding(cardPadding, cardPadding, cardPadding, cardPadding)
+        }
+
+        val row = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+        alternatives.forEachIndexed { index, char ->
+            row.addView(createCell(context, char, index))
+        }
+        card.addView(row)
+
+        // Room for the card shadow, the dialog window itself is transparent
+        return FrameLayout(context).apply {
+            val shadowSpace = shadowSpace()
+            setPadding(shadowSpace, shadowSpace, shadowSpace, shadowSpace)
+            clipToPadding = false
+            addView(card)
+        }
+    }
+
+    // ALT + digit picks one of the first nine alternatives, so the cell shows its digit under the char.
+    // It must be the ASCII digit printed on the key, not a locale formatted number.
+    @SuppressLint("SetTextI18n")
+    private fun createCell(context: Context, char: Char, index: Int): LinearLayout {
+        val cornerRadius = MaterialUi.dp(context, CELL_CORNER_DP)
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            minimumWidth = MaterialUi.dp(context, CELL_MIN_WIDTH_DP)
+            val padding = MaterialUi.dp(context, CELL_PADDING_DP)
+            setPadding(padding, padding, padding, padding)
+            background = MaterialUi.pressableBackground(context, null) {
+                MaterialUi.roundedRect(MaterialUi.color(context, MaterialR.attr.colorSecondaryContainer), cornerRadius)
+            }
+            setOnClickListener {
+                onCharacterSelected(char)
+                dismiss()
+            }
+
+            addView(TextView(context).apply {
+                text = char.toString()
+                setTextAppearance(MaterialUi.resolveTextAppearance(context, MaterialR.attr.textAppearanceTitleLarge))
+                setTextColor(MaterialUi.color(context, MaterialR.attr.colorOnSurface))
+            })
+            if (index < MAX_SHORTCUTS) {
+                addView(TextView(context).apply {
+                    text = (index + 1).toString()
+                    setTextAppearance(MaterialUi.resolveTextAppearance(context, MaterialR.attr.textAppearanceLabelSmall))
+                    setTextColor(MaterialUi.color(context, MaterialR.attr.colorOnSurfaceVariant))
+                })
+            }
+        }
+    }
+
     fun dismiss() {
         dialog?.dismiss()
         dialog = null
@@ -111,9 +143,17 @@ class AlternativesDialog(
 
     fun isShowing(): Boolean = dialog?.isShowing == true
 
-    private fun popupOffsetY(): Int = (POPUP_OFFSET_Y_DP * context.resources.displayMetrics.density).toInt()
+    private fun popupOffsetY(): Int = MaterialUi.dp(context, POPUP_OFFSET_Y_DP - SHADOW_SPACE_DP)
+
+    private fun shadowSpace(): Int = MaterialUi.dp(context, SHADOW_SPACE_DP)
 
     private companion object {
         const val POPUP_OFFSET_Y_DP = 32
+        const val SHADOW_SPACE_DP = 12
+        const val CARD_PADDING_DP = 4
+        const val CELL_PADDING_DP = 6
+        const val CELL_MIN_WIDTH_DP = 44
+        const val CELL_CORNER_DP = 14f
+        const val MAX_SHORTCUTS = 9
     }
 }

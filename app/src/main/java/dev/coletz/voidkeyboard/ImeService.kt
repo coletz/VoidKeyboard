@@ -2,8 +2,6 @@ package dev.coletz.voidkeyboard
 
 import android.content.Intent
 import android.inputmethodservice.InputMethodService
-import android.inputmethodservice.Keyboard
-import android.inputmethodservice.KeyboardView
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
@@ -22,7 +20,7 @@ import dev.coletz.voidkeyboard.mapping.DeviceKeyboard
 import dev.coletz.voidkeyboard.mapping.KeyCodeMapper
 
 @Suppress("DEPRECATION")
-class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
+class ImeService : InputMethodService() {
 
     // CONSUMED: the key down was handled by the IME, so the matching key up must not reach the app
     private enum class KeyState { TRACKING, LONG_PRESS_HANDLED, CONSUMED }
@@ -38,7 +36,6 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
     private var alternativesDialog: AlternativesDialog? = null
     private var currentAlternatives: List<Char>? = null
-    private var keyboardView: KeyboardView? = null
     private var cursorAnchorInfo: CursorAnchorInfo? = null
     private var speechRecognizer: SpeechRecognizer? = null
     private var voiceInputDialog: VoiceInputDialog? = null
@@ -53,12 +50,7 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     }
 
     override fun onCreateInputView(): android.view.View {
-        val view = KeyboardView(this, null).apply {
-            keyboard = Keyboard(this@ImeService, R.xml.sym_keyboard)
-            setOnKeyboardActionListener(this@ImeService)
-        }
-        keyboardView = view
-        return view
+        return SymbolsKeyboardView(MaterialUi.themedContext(this), onSymbol = ::commitCharacter)
     }
 
     override fun onEvaluateInputViewShown(): Boolean {
@@ -401,15 +393,6 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         return ic.getCursorCapsMode(inputType) != 0
     }
 
-    override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
-        val ic = currentInputConnection ?: return
-        when (primaryCode) {
-            Keyboard.KEYCODE_DELETE -> ic.deleteSurroundingText(1, 0)
-            Keyboard.KEYCODE_DONE -> sendKey(KeyEvent.KEYCODE_ENTER)
-            else -> commitCharacter(primaryCode.toChar())
-        }
-    }
-
     private fun launchVoiceInput() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             Toast.makeText(this, getString(R.string.voice_input_not_available), Toast.LENGTH_SHORT).show()
@@ -443,7 +426,9 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
                 override fun onReadyForSpeech(params: Bundle?) {}
                 override fun onBeginningOfSpeech() {}
-                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onRmsChanged(rmsdB: Float) {
+                    voiceInputDialog?.onRmsChanged(rmsdB)
+                }
                 override fun onBufferReceived(buffer: ByteArray?) {}
                 override fun onEndOfSpeech() {}
                 override fun onPartialResults(partialResults: Bundle?) {}
@@ -472,17 +457,6 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         speechRecognizer?.stopListening()
         dismissVoiceInputDialog()
     }
-
-    override fun onText(text: CharSequence?) {
-        currentInputConnection?.commitText(text, 1)
-    }
-
-    override fun onPress(primaryCode: Int) {}
-    override fun onRelease(primaryCode: Int) {}
-    override fun swipeLeft() {}
-    override fun swipeRight() {}
-    override fun swipeDown() {}
-    override fun swipeUp() {}
 
     override fun onDestroy() {
         EditorFocusState.imeRunning = false

@@ -14,6 +14,7 @@
     <string name="voice_input_not_available">Input vocale non disponibile</string>
     <string name="voice_no_match">Nessun parlato rilevato</string>
     <string name="voice_audio_error">Errore audio</string>
+    <string name="voice_listening">In ascolto…</string>
     <string name="overlay_permission_channel_name">Permesso di sovrapposizione</string>
     <string name="overlay_permission_channel_desc">Promemoria per concedere il permesso richiesto dai popup della tastiera</string>
     <string name="overlay_permission_title">Permesso di sovrapposizione richiesto</string>

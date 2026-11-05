@@ -15,6 +15,7 @@
     <string name="voice_input_not_available">Voice input not available</string>
     <string name="voice_no_match">No speech detected</string>
     <string name="voice_audio_error">Audio error</string>
+    <string name="voice_listening">Listening…</string>
     <string name="overlay_permission_channel_name">Overlay permission</string>
     <string name="overlay_permission_channel_desc">Reminder to grant the permission needed by the keyboard popups</string>
     <string name="overlay_permission_title">Overlay permission required</string>

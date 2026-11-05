@@ -29,6 +29,7 @@ android {
         }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -38,10 +39,12 @@ android {
             dimension = "device"
             applicationIdSuffix = ".minimalphone"
             isDefault = true
+            buildConfigField("boolean", "UI_EFFECTS", "false")
         }
         create("blackberry") {
             dimension = "device"
             applicationIdSuffix = ".blackberry"
+            buildConfigField("boolean", "UI_EFFECTS", "true")
         }
     }
 
@@ -58,4 +61,5 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+    implementation(libs.androidx.dynamicanimation)
 }

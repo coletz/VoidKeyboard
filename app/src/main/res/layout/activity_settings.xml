@@ -1,128 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/settings_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:clipToPadding="false">
 
     <LinearLayout
-        android:id="@+id/enabled_languages_setting"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true">
+        android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/enabled_languages_setting"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary" />
+        <!-- Grouped list: the backgrounds (rounded outer corners, ripple) are set in SettingsActivity -->
+        <LinearLayout
+            android:id="@+id/enabled_languages_setting"
+            style="@style/SettingsItem">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"
-            android:text="@string/enabled_languages_setting_desc"
-            android:textColor="?android:attr/textColorSecondary" />
+            <TextView
+                style="@style/SettingsItemTitle"
+                android:text="@string/enabled_languages_setting" />
 
-    </LinearLayout>
+            <TextView
+                style="@style/SettingsItemSummary"
+                android:text="@string/enabled_languages_setting_desc" />
 
-    <LinearLayout
-        android:id="@+id/selected_language_setting"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true">
+        </LinearLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_selected_language"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary" />
+        <LinearLayout
+            android:id="@+id/selected_language_setting"
+            style="@style/SettingsItem">
 
-        <TextView
-            android:id="@+id/language_value"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"
-            android:textColor="?android:attr/textColorSecondary" />
+            <TextView
+                style="@style/SettingsItemTitle"
+                android:text="@string/settings_selected_language" />
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/language_value"
+                style="@style/SettingsItemSummary" />
 
-    <LinearLayout
-        android:id="@+id/key_navigation_setting"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true">
+        </LinearLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/key_navigation_setting"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary" />
+        <LinearLayout
+            android:id="@+id/key_navigation_setting"
+            style="@style/SettingsItem">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"
-            android:text="@string/key_navigation_setting_desc"
-            android:textColor="?android:attr/textColorSecondary" />
+            <TextView
+                style="@style/SettingsItemTitle"
+                android:text="@string/key_navigation_setting" />
 
-        <TextView
-            android:id="@+id/key_navigation_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"
-            android:textColor="?android:attr/textColorSecondary" />
+            <TextView
+                style="@style/SettingsItemSummary"
+                android:text="@string/key_navigation_setting_desc" />
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/key_navigation_status"
+                style="@style/SettingsItemSummary"
+                android:textAppearance="?attr/textAppearanceLabelLarge"
+                android:textColor="?attr/colorPrimary" />
 
-    <LinearLayout
-        android:id="@+id/test_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true">
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/test_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/test_label"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:labelFor="@+id/test_box" />
-
-        <EditText
-            android:id="@+id/test_box"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/test_input_layout"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:importantForAutofill="no"
-            android:inputType="textMultiLine|textCapSentences"
-            android:textSize="14sp"
-            android:textColor="?android:attr/textColorSecondary" />
+            android:layout_marginTop="24dp"
+            android:hint="@string/test_label">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/test_box"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine|textCapSentences"
+                android:minLines="3"
+                android:gravity="top|start" />
+
+        </com.google.android.material.textfield.TextInputLayout>
 
     </LinearLayout>
 
-</LinearLayout>
+</ScrollView>
