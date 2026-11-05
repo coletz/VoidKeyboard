@@ -6,7 +6,11 @@ import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.hardware.display.DisplayManager
+import android.os.Build
 import android.provider.Settings
+import android.view.Display
+import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
@@ -17,6 +21,17 @@ object OverlayPermissionHelper {
     private const val NOTIFICATION_ID = 1001
 
     fun hasPermission(context: Context): Boolean = Settings.canDrawOverlays(context)
+
+    /**
+     * Context for the overlay popups. A window context avoids StrictMode's non-UI context warning,
+     * but it needs API 31: before that the service context works, since the popup windows set
+     * TYPE_APPLICATION_OVERLAY themselves.
+     */
+    fun createOverlayContext(context: Context): Context {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return context
+        val display = context.getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY)
+        return context.createWindowContext(display, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null)
+    }
 
     /**
      * Called from the IME when a popup can't be shown. A notification doesn't interrupt typing and,

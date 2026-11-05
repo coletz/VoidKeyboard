@@ -11,8 +11,8 @@ android {
 
     defaultConfig {
         applicationId = "dev.coletz.voidkeyboard"
-        minSdk = 34
-        targetSdk = 36
+        minSdk = 27
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
@@ -28,6 +28,19 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+    flavorDimensions += "device"
+    productFlavors {
+        create("minimalphone") {
+            dimension = "device"
+            applicationIdSuffix = ".minimalphone"
+            isDefault = true
+        }
+        create("blackberry") {
+            dimension = "device"
+            applicationIdSuffix = ".blackberry"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

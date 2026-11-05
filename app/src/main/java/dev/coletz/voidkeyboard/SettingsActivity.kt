@@ -45,12 +45,9 @@ class SettingsActivity : AppCompatActivity() {
 
     // Notifications first: without them the keyboard can't remind about the overlay permission later
     private fun requestPermissions() {
-        val notificationsGranted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (notificationsGranted) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        ) {
             askOverlayPermission()
         } else {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)

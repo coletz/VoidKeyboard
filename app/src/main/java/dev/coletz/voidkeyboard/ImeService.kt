@@ -330,9 +330,18 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         "toggleSymKeyboard called, current visible: $symKeyboardVisible".log()
         symKeyboardVisible = !symKeyboardVisible
         if (symKeyboardVisible) {
-            requestShowSelf(0)
+            showSelf()
         } else {
             requestHideSelf(0)
+        }
+    }
+
+    private fun showSelf() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            requestShowSelf(0)
+        } else {
+            val token = window.window?.attributes?.token ?: return
+            inputMethodManager.showSoftInputFromInputMethod(token, 0)
         }
     }
 

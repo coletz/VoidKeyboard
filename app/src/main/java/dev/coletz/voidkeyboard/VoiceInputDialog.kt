@@ -4,7 +4,6 @@ import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.hardware.display.DisplayManager
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.ImageView
@@ -23,16 +22,8 @@ class VoiceInputDialog(private val context: Context) {
 
         dismiss()
 
-        val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-        val display = displayManager.getDisplay(0)
-
-        windowContext = context.createWindowContext(
-            display,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            null
-        )
-
-        val overlayContext = windowContext ?: return
+        val overlayContext = OverlayPermissionHelper.createOverlayContext(context)
+        windowContext = overlayContext
 
         val dialog = Dialog(overlayContext, android.R.style.Theme_DeviceDefault_Light_Dialog_NoActionBar)
 
