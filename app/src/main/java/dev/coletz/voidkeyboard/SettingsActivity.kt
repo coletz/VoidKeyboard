@@ -1,11 +1,14 @@
 package dev.coletz.voidkeyboard
 
 import android.Manifest
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
+import android.view.accessibility.AccessibilityManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,6 +19,7 @@ import androidx.core.content.ContextCompat
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var languageValue: TextView
+    private lateinit var keyNavigationStatus: TextView
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -36,6 +40,13 @@ class SettingsActivity : AppCompatActivity() {
 
         findViewById<LinearLayout>(R.id.selected_language_setting).setOnClickListener {
             inputMethodManager.showInputMethodPicker()
+        }
+
+        keyNavigationStatus = findViewById(R.id.key_navigation_status)
+        updateKeyNavigationStatus()
+
+        findViewById<View>(R.id.key_navigation_setting).setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
         if (savedInstanceState == null) {
@@ -69,6 +80,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateLanguageDisplay()
+        updateKeyNavigationStatus()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -108,5 +120,15 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun updateLanguageDisplay() {
         languageValue.text = ImeUtils.getSelectedImeInfo(this)
+    }
+
+    private fun updateKeyNavigationStatus() {
+        val enabled = getSystemService(AccessibilityManager::class.java)
+            .getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            .any {
+                val service = it.resolveInfo.serviceInfo
+                service.packageName == packageName && service.name == KeyNavigationService::class.java.name
+            }
+        keyNavigationStatus.setText(if (enabled) R.string.key_navigation_enabled else R.string.key_navigation_disabled)
     }
 }

@@ -22,4 +22,10 @@
     <string name="open_settings">Apri impostazioni</string>
     <string name="not_now">Non ora</string>
     <string name="test_label">Usa questo campo per provare la tastiera</string>
+    <string name="key_navigation_service_label">Scorrimento Void Keyboard</string>
+    <string name="key_navigation_service_desc">Quando nessun campo di testo è selezionato, Spazio scorre verso il basso e Shift+Spazio verso l\'alto. Funziona solo se Void Keyboard è la tastiera attiva.</string>
+    <string name="key_navigation_setting">Scorri con Spazio</string>
+    <string name="key_navigation_setting_desc">Spazio scorre verso il basso e Shift+Spazio verso l\'alto quando nessun campo di testo è selezionato. Richiede di attivare il servizio di accessibilità. Se l\'interruttore è disattivato, consenti le impostazioni con restrizioni dalla schermata info dell\'app.</string>
+    <string name="key_navigation_enabled">Attivo</string>
+    <string name="key_navigation_disabled">Non attivo</string>
 </resources>

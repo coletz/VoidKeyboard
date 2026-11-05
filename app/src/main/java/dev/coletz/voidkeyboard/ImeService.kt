@@ -4,11 +4,13 @@ import android.content.Intent
 import android.inputmethodservice.InputMethodService
 import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.text.InputType
 import android.view.KeyEvent
 import android.view.inputmethod.CursorAnchorInfo
 import android.view.inputmethod.ExtractedTextRequest
@@ -45,6 +47,11 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         return AlternativesProvider.getAltKeysMap(this, ImeUtils.getSelectedLocale(this))
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        EditorFocusState.imeRunning = true
+    }
+
     override fun onCreateInputView(): android.view.View {
         val view = KeyboardView(this, null).apply {
             keyboard = Keyboard(this@ImeService, R.xml.sym_keyboard)
@@ -68,8 +75,15 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         restarting: Boolean
     ) {
         super.onStartInput(attribute, restarting)
+        // Windows without an editor still bind the IME, with a TYPE_NULL EditorInfo
+        EditorFocusState.editorFocused = attribute != null && attribute.inputType != InputType.TYPE_NULL
         resetState()
         currentInputConnection?.requestCursorUpdates(InputConnection.CURSOR_UPDATE_MONITOR)
+    }
+
+    override fun onFinishInput() {
+        super.onFinishInput()
+        EditorFocusState.editorFocused = false
     }
 
     override fun onUpdateCursorAnchorInfo(info: CursorAnchorInfo?) {
@@ -472,6 +486,8 @@ class ImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     override fun swipeUp() {}
 
     override fun onDestroy() {
+        EditorFocusState.imeRunning = false
+        EditorFocusState.editorFocused = false
         speechRecognizer?.destroy()
         speechRecognizer = null
         dismissVoiceInputDialog()

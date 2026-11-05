@@ -1,7 +1,10 @@
 package dev.coletz.voidkeyboard
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Context.INPUT_METHOD_SERVICE
+import android.os.Build
+import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
 import dev.coletz.voidkeyboard.mapping.AlternativesProvider
 
@@ -20,13 +23,13 @@ object ImeUtils {
     }
 
     fun getSelectedImeInfo(context: Context): String {
-        val currentImeInfo = context.inputMethodManager.currentInputMethodInfo ?: return context.getString(R.string.ime_unknown)
-        if (currentImeInfo.packageName != context.packageName) {
+        val currentImePackage = getCurrentImePackage(context) ?: return context.getString(R.string.ime_unknown)
+        if (currentImePackage != context.packageName) {
             val otherAppLocale = context.inputMethodManager.currentInputMethodSubtype
             return context.getString(
                 R.string.other_app_selected_locale,
                 otherAppLocale?.locale ?: "",
-                currentImeInfo.packageName
+                currentImePackage
             )
         }
         val currentSubtype = context.inputMethodManager.currentInputMethodSubtype
@@ -37,6 +40,16 @@ object ImeUtils {
             ?: currentLocale
 
         return displayName
+    }
+
+    private fun getCurrentImePackage(context: Context): String? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return context.inputMethodManager.currentInputMethodInfo?.packageName
+        }
+        // getCurrentInputMethodInfo() is API 34, before that the current IME id is in the secure settings
+        val imeId = Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
+            ?: return null
+        return ComponentName.unflattenFromString(imeId)?.packageName
     }
 }
 

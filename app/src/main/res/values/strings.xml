@@ -23,4 +23,10 @@
     <string name="open_settings">Open settings</string>
     <string name="not_now">Not now</string>
     <string name="test_label">Use this field for testing the keyboard</string>
+    <string name="key_navigation_service_label">Void Keyboard scrolling</string>
+    <string name="key_navigation_service_desc">When no text field is focused, Space scrolls down and Shift+Space scrolls up. It only works while Void Keyboard is the active keyboard.</string>
+    <string name="key_navigation_setting">Scroll with Space</string>
+    <string name="key_navigation_setting_desc">Space scrolls down and Shift+Space scrolls up when no text field is focused. Requires enabling the accessibility service. If the toggle is greyed out, allow restricted settings from the app info screen.</string>
+    <string name="key_navigation_enabled">Enabled</string>
+    <string name="key_navigation_disabled">Disabled</string>
 </resources>
