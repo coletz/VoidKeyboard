@@ -25,12 +25,11 @@ class ImeService : InputMethodService() {
     // CONSUMED: the key down was handled by the IME, so the matching key up must not reach the app
     private enum class KeyState { TRACKING, LONG_PRESS_HANDLED, CONSUMED }
 
-    private var shiftState = ShiftState.OFF
-    private var lastShiftPressTime = 0L
+    private val shift = LockableModifier()
+    private val alt = LockableModifier()
     private var symKeyState: SymKeyState = SymKeyState.Up
     private var symKeyHeld = false
     private var symKeyboardVisible = false
-    private var altKeyDown = false
 
     private val trackedKeys = mutableMapOf<Int, KeyState>()
 
@@ -39,6 +38,7 @@ class ImeService : InputMethodService() {
     private var cursorAnchorInfo: CursorAnchorInfo? = null
     private var speechRecognizer: SpeechRecognizer? = null
     private var voiceInputDialog: VoiceInputDialog? = null
+    private var modifierIndicator: ModifierIndicator? = null
 
     private fun getCurrentAlternativesMap(): Map<Char, AltKeyCharacters> {
         return AlternativesProvider.getAltKeysMap(this, ImeUtils.getSelectedLocale(this))
@@ -76,6 +76,8 @@ class ImeService : InputMethodService() {
     override fun onFinishInput() {
         super.onFinishInput()
         EditorFocusState.editorFocused = false
+        // Without an editor a locked modifier would leave the indicator on screen over other apps
+        resetModifiers()
     }
 
     override fun onUpdateCursorAnchorInfo(info: CursorAnchorInfo?) {
@@ -84,7 +86,7 @@ class ImeService : InputMethodService() {
     }
 
     private fun resetState() {
-        shiftState = ShiftState.OFF
+        resetModifiers()
         trackedKeys.clear()
         symKeyState = SymKeyState.Up
         dismissAlternativesPopup()
@@ -106,12 +108,17 @@ class ImeService : InputMethodService() {
             return true
         }
 
+        if (event.repeatCount == 0 && !isShiftKey(keyCode) && !isAltKey(keyCode) && keyCode != KeyEvent.KEYCODE_SYM) {
+            shift.onOtherKeyDown()
+            alt.onOtherKeyDown()
+        }
+
         if (alternativesDialog?.isShowing() == true) {
-            if (keyCode == KeyEvent.KEYCODE_ALT_LEFT || keyCode == KeyEvent.KEYCODE_ALT_RIGHT) {
-                altKeyDown = true
+            if (isAltKey(keyCode)) {
+                if (event.repeatCount == 0) handleAltDown()
                 return true
             }
-            val index = KeyCodeMapper.toChar(keyCode, useSecondary = altKeyDown)?.digitToIntOrNull()
+            val index = KeyCodeMapper.toChar(keyCode, useSecondary = alt.isActive)?.digitToIntOrNull()
             val selected = index?.let { currentAlternatives?.getOrNull(it - 1) }
             dismissAlternativesPopup()
             if (selected != null) {
@@ -137,8 +144,7 @@ class ImeService : InputMethodService() {
 
         // Hide sym keyboard when any physical key is pressed (except modifiers and SYM itself)
         if (symKeyboardVisible && keyCode != KeyEvent.KEYCODE_SYM
-            && keyCode != KeyEvent.KEYCODE_ALT_LEFT && keyCode != KeyEvent.KEYCODE_ALT_RIGHT
-            && !isShiftKey(keyCode)) {
+            && !isAltKey(keyCode) && !isShiftKey(keyCode)) {
             symKeyboardVisible = false
             requestHideSelf(0)
         }
@@ -150,12 +156,12 @@ class ImeService : InputMethodService() {
             return true
         }
 
-        if (keyCode == KeyEvent.KEYCODE_ALT_LEFT || keyCode == KeyEvent.KEYCODE_ALT_RIGHT) {
-            altKeyDown = true
+        if (isAltKey(keyCode)) {
+            if (event.repeatCount == 0) handleAltDown()
             return true
         }
 
-        if (keyCode == DeviceKeyboard.microphoneKeyCode && !altKeyDown) {
+        if (keyCode == DeviceKeyboard.microphoneKeyCode && !alt.isActive) {
             if (voiceInputDialog != null) {
                 stopVoiceInput()
             } else {
@@ -191,10 +197,10 @@ class ImeService : InputMethodService() {
             return super.onKeyDown(keyCode, event)
         }
 
-        val char = KeyCodeMapper.toChar(keyCode, useSecondary = altKeyDown)?.lowercaseChar()
+        val char = KeyCodeMapper.toChar(keyCode, useSecondary = alt.isActive)?.lowercaseChar()
         if (char != null) {
             // Track for long press only if character has alternatives
-            if (event.repeatCount == 0 && !altKeyDown && getCurrentAlternativesMap().containsKey(char)) {
+            if (event.repeatCount == 0 && !alt.isActive && getCurrentAlternativesMap().containsKey(char)) {
                 trackedKeys[keyCode] = KeyState.TRACKING
                 event.startTracking()
             }
@@ -209,6 +215,10 @@ class ImeService : InputMethodService() {
         return keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT
     }
 
+    private fun isAltKey(keyCode: Int): Boolean {
+        return keyCode == KeyEvent.KEYCODE_ALT_LEFT || keyCode == KeyEvent.KEYCODE_ALT_RIGHT
+    }
+
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_SYM) {
             "SYM key UP detected, state: $symKeyState".log()
@@ -220,8 +230,8 @@ class ImeService : InputMethodService() {
             return true
         }
 
-        if (keyCode == KeyEvent.KEYCODE_ALT_LEFT || keyCode == KeyEvent.KEYCODE_ALT_RIGHT) {
-            altKeyDown = false
+        if (isAltKey(keyCode)) {
+            handleAltUp()
             return true
         }
 
@@ -251,7 +261,7 @@ class ImeService : InputMethodService() {
             return super.onKeyLongPress(keyCode, event)
         }
 
-        val char = KeyCodeMapper.toChar(keyCode, useSecondary = altKeyDown)?.lowercaseChar()
+        val char = KeyCodeMapper.toChar(keyCode, useSecondary = alt.isActive)?.lowercaseChar()
             ?: return super.onKeyLongPress(keyCode, event)
         val alternatives = getCurrentAlternativesMap()[char]
             ?: return super.onKeyLongPress(keyCode, event)
@@ -313,23 +323,40 @@ class ImeService : InputMethodService() {
     }
 
     private fun handleShiftDown() {
-        val now = System.currentTimeMillis()
-        val isDoubleTap = now - lastShiftPressTime < 500
-
-        shiftState = when (shiftState) {
-            ShiftState.OFF -> {
-                if (isDoubleTap) ShiftState.CAPS_LOCK else ShiftState.HELD
-            }
-            ShiftState.HELD -> ShiftState.HELD // Already held, ignore repeat
-            ShiftState.CAPS_LOCK -> ShiftState.OFF
-        }
-        lastShiftPressTime = now
+        shift.onDown(SystemClock.uptimeMillis())
+        updateModifierIndicator()
     }
 
     private fun handleShiftUp() {
-        if (shiftState == ShiftState.HELD) {
-            shiftState = ShiftState.OFF
+        shift.onUp(SystemClock.uptimeMillis())
+        updateModifierIndicator()
+    }
+
+    private fun handleAltDown() {
+        alt.onDown(SystemClock.uptimeMillis())
+        updateModifierIndicator()
+    }
+
+    private fun handleAltUp() {
+        alt.onUp(SystemClock.uptimeMillis())
+        updateModifierIndicator()
+    }
+
+    private fun resetModifiers() {
+        shift.reset()
+        alt.reset()
+        updateModifierIndicator()
+    }
+
+    /** Shows the locked modifiers on screen, since a hardware keyboard has no lock LEDs */
+    private fun updateModifierIndicator() {
+        val labels = buildList {
+            if (shift.isLocked) add(getString(R.string.indicator_caps_lock))
+            if (alt.isLocked) add(getString(R.string.indicator_alt_lock))
         }
+        if (labels.isEmpty() && modifierIndicator == null) return
+        val indicator = modifierIndicator ?: ModifierIndicator(this).also { modifierIndicator = it }
+        indicator.update(labels)
     }
 
     private fun toggleSymKeyboard() {
@@ -386,7 +413,7 @@ class ImeService : InputMethodService() {
     }
 
     private fun shouldCapitalize(): Boolean {
-        if (shiftState != ShiftState.OFF) return true
+        if (shift.isActive) return true
         val ic = currentInputConnection ?: return false
         val inputType = currentInputEditorInfo?.inputType ?: return false
         // Honors the editor's textCapSentences/textCapWords/textCapCharacters flags
@@ -465,6 +492,8 @@ class ImeService : InputMethodService() {
         speechRecognizer = null
         dismissVoiceInputDialog()
         dismissAlternativesPopup()
+        modifierIndicator?.dismiss()
+        modifierIndicator = null
         super.onDestroy()
     }
 
