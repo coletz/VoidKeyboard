@@ -10,6 +10,8 @@ object DeviceKeyboard : DeviceKeyboardLayout {
 
     override val microphoneKeyCode: Int? = KEYCODE_MICROPHONE
 
+    override val touchKeyboardDeviceName: String? = null
+
     override val keyMappings: Map<Int, KeyMapping> = mapOf(
         KeyEvent.KEYCODE_A to KeyMapping('a', '@'),
         KeyEvent.KEYCODE_B to KeyMapping('b', '%'),

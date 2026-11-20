@@ -18,6 +18,7 @@
     <string name="voice_listening">Listening…</string>
     <string name="indicator_caps_lock" translatable="false">⇪ Caps</string>
     <string name="indicator_alt_lock" translatable="false">ⵘ Sym</string>
+    <string name="indicator_cursor_mode">↔ Cursor</string>
     <string name="overlay_permission_channel_name">Overlay permission</string>
     <string name="overlay_permission_channel_desc">Reminder to grant the permission needed by the keyboard popups</string>
     <string name="overlay_permission_title">Overlay permission required</string>
@@ -32,4 +33,9 @@
     <string name="key_navigation_setting_desc">Space scrolls down and Shift+Space scrolls up when no text field is focused. Requires enabling the accessibility service. If the toggle is greyed out, allow restricted settings from the app info screen.</string>
     <string name="key_navigation_enabled">Enabled</string>
     <string name="key_navigation_disabled">Disabled</string>
+    <string name="touch_keyboard_section">Touch sensitive keyboard</string>
+    <string name="cursor_mode_setting">Cursor mode</string>
+    <string name="cursor_mode_setting_desc">Double tap the keyboard without pressing a key to turn cursor mode on or off. In cursor mode, sliding a finger on the keyboard moves the cursor, and holding Shift selects text.</string>
+    <string name="swipe_to_delete_setting">Swipe to delete</string>
+    <string name="swipe_to_delete_setting_desc">Swipe left on the keyboard to delete the word before the cursor.</string>
 </resources>

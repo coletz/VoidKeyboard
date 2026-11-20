@@ -21,6 +21,8 @@ import androidx.core.view.updatePadding
 import com.google.android.material.R as MaterialR
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.materialswitch.MaterialSwitch
+import dev.coletz.voidkeyboard.mapping.DeviceKeyboard
 import com.google.android.material.textfield.TextInputLayout
 
 class SettingsActivity : AppCompatActivity() {
@@ -74,8 +76,36 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
+        if (DeviceKeyboard.touchKeyboardDeviceName != null) {
+            setupTouchKeyboardSection()
+        }
+
         if (savedInstanceState == null) {
             requestPermissions()
+        }
+    }
+
+    private fun setupTouchKeyboardSection() {
+        findViewById<View>(R.id.touch_keyboard_section).visibility = View.VISIBLE
+        val settings = TouchKeyboardSettings(this)
+        styleGroupedItems(
+            findViewById(R.id.cursor_mode_setting),
+            findViewById(R.id.swipe_to_delete_setting)
+        )
+        bindSwitch(R.id.cursor_mode_setting, R.id.cursor_mode_switch, settings.cursorModeEnabled) {
+            settings.cursorModeEnabled = it
+        }
+        bindSwitch(R.id.swipe_to_delete_setting, R.id.swipe_to_delete_switch, settings.swipeToDeleteEnabled) {
+            settings.swipeToDeleteEnabled = it
+        }
+    }
+
+    private fun bindSwitch(rowId: Int, switchId: Int, initial: Boolean, onChanged: (Boolean) -> Unit) {
+        val switch = findViewById<MaterialSwitch>(switchId)
+        switch.isChecked = initial
+        findViewById<View>(rowId).setOnClickListener {
+            switch.isChecked = !switch.isChecked
+            onChanged(switch.isChecked)
         }
     }
 

@@ -11,6 +11,9 @@ object DeviceKeyboard : DeviceKeyboardLayout {
 
     override val microphoneKeyCode: Int? = KEYCODE_MICROPHONE
 
+    // Capacitive surface of the KEYone/KEY2 keyboard (/system/usr/idc/touch_keypad.idc)
+    override val touchKeyboardDeviceName: String? = "touch_keypad"
+
     override val keyMappings: Map<Int, KeyMapping> = mapOf(
         KeyEvent.KEYCODE_A to KeyMapping('a', '*'),
         KeyEvent.KEYCODE_B to KeyMapping('b', '!'),

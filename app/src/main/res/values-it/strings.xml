@@ -29,4 +29,10 @@
     <string name="key_navigation_setting_desc">Spazio scorre verso il basso e Shift+Spazio verso l\'alto quando nessun campo di testo è selezionato. Richiede di attivare il servizio di accessibilità. Se l\'interruttore è disattivato, consenti le impostazioni con restrizioni dalla schermata info dell\'app.</string>
     <string name="key_navigation_enabled">Attivo</string>
     <string name="key_navigation_disabled">Non attivo</string>
+    <string name="indicator_cursor_mode">↔ Cursore</string>
+    <string name="touch_keyboard_section">Tastiera sensibile al tocco</string>
+    <string name="cursor_mode_setting">Modalità cursore</string>
+    <string name="cursor_mode_setting_desc">Tocca due volte la tastiera senza premere tasti per attivare o disattivare la modalità cursore. In modalità cursore, facendo scorrere il dito sulla tastiera sposti il cursore, e tenendo premuto Shift selezioni il testo.</string>
+    <string name="swipe_to_delete_setting">Scorri per cancellare</string>
+    <string name="swipe_to_delete_setting_desc">Scorri verso sinistra sulla tastiera per cancellare la parola prima del cursore.</string>
 </resources>

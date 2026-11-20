@@ -60,6 +60,64 @@
 
         </LinearLayout>
 
+        <!-- Only shown when the device's keyboard is touch sensitive (DeviceKeyboard.touchKeyboardDeviceName) -->
+        <LinearLayout
+            android:id="@+id/touch_keyboard_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/touch_keyboard_section" />
+
+            <LinearLayout
+                android:id="@+id/cursor_mode_setting"
+                style="@style/SettingsSwitchItem">
+
+                <LinearLayout style="@style/SettingsSwitchItemText">
+
+                    <TextView
+                        style="@style/SettingsItemTitle"
+                        android:text="@string/cursor_mode_setting" />
+
+                    <TextView
+                        style="@style/SettingsItemSummary"
+                        android:text="@string/cursor_mode_setting_desc" />
+
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/cursor_mode_switch"
+                    style="@style/SettingsSwitch" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/swipe_to_delete_setting"
+                style="@style/SettingsSwitchItem">
+
+                <LinearLayout style="@style/SettingsSwitchItemText">
+
+                    <TextView
+                        style="@style/SettingsItemTitle"
+                        android:text="@string/swipe_to_delete_setting" />
+
+                    <TextView
+                        style="@style/SettingsItemSummary"
+                        android:text="@string/swipe_to_delete_setting_desc" />
+
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/swipe_to_delete_switch"
+                    style="@style/SettingsSwitch" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/test_input_layout"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"

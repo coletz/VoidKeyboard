@@ -10,6 +10,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.text.InputType
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.inputmethod.CursorAnchorInfo
 import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
@@ -39,6 +40,18 @@ class ImeService : InputMethodService() {
     private var speechRecognizer: SpeechRecognizer? = null
     private var voiceInputDialog: VoiceInputDialog? = null
     private var modifierIndicator: ModifierIndicator? = null
+
+    // Lazy: SharedPreferences need the base context, which isn't attached yet at construction
+    private val touchGestures by lazy {
+        DeviceKeyboard.touchKeyboardDeviceName?.let { name ->
+            TouchKeyboardGestures(name, TouchKeyboardSettings(this), object : TouchKeyboardGestures.Listener {
+                override fun onDeleteWord() = deleteWordBeforeCursor()
+                // SHIFT held while dragging extends the selection (see sendKey)
+                override fun onMoveCursor(keyCode: Int) = sendKey(keyCode)
+                override fun onCursorModeChanged(enabled: Boolean) = updateModifierIndicator()
+            })
+        }
+    }
 
     private fun getCurrentAlternativesMap(): Map<Char, AltKeyCharacters> {
         return AlternativesProvider.getAltKeysMap(this, ImeUtils.getSelectedLocale(this))
@@ -78,6 +91,7 @@ class ImeService : InputMethodService() {
         EditorFocusState.editorFocused = false
         // Without an editor a locked modifier would leave the indicator on screen over other apps
         resetModifiers()
+        touchGestures?.reset()
     }
 
     override fun onUpdateCursorAnchorInfo(info: CursorAnchorInfo?) {
@@ -85,8 +99,21 @@ class ImeService : InputMethodService() {
         cursorAnchorInfo = info
     }
 
+    override fun onGenericMotionEvent(event: MotionEvent): Boolean {
+        val gestures = touchGestures
+        if (gestures == null || !gestures.isFromTouchKeyboard(event)) {
+            return super.onGenericMotionEvent(event)
+        }
+        // Outside an editor the touch keyboard keeps scrolling the app, as with the stock keyboard
+        if (!EditorFocusState.editorFocused) return false
+        gestures.onMotionEvent(event)
+        // Consumed, so the framework doesn't turn it into a scroll of the app below
+        return true
+    }
+
     private fun resetState() {
         resetModifiers()
+        touchGestures?.reset()
         trackedKeys.clear()
         symKeyState = SymKeyState.Up
         dismissAlternativesPopup()
@@ -108,7 +135,12 @@ class ImeService : InputMethodService() {
             return true
         }
 
-        if (event.repeatCount == 0 && !isShiftKey(keyCode) && !isAltKey(keyCode) && keyCode != KeyEvent.KEYCODE_SYM) {
+        val isModifier = isShiftKey(keyCode) || isAltKey(keyCode) || keyCode == KeyEvent.KEYCODE_SYM
+        if (event.repeatCount == 0) {
+            touchGestures?.onKeyDown(event.eventTime, isModifier)
+        }
+
+        if (event.repeatCount == 0 && !isModifier) {
             shift.onOtherKeyDown()
             alt.onOtherKeyDown()
         }
@@ -194,7 +226,9 @@ class ImeService : InputMethodService() {
             if (event.repeatCount == 0) {
                 handleShiftDown()
             }
-            return super.onKeyDown(keyCode, event)
+            // Never passed to the app: TextView stores SHIFT in the text and would keep selecting
+            // forever if it saw the down but not the up. sendKey adds SHIFT where it's needed.
+            return true
         }
 
         val char = KeyCodeMapper.toChar(keyCode, useSecondary = alt.isActive)?.lowercaseChar()
@@ -288,11 +322,34 @@ class ImeService : InputMethodService() {
         ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, KeyEvent.META_CTRL_ON))
     }
 
+    /** Sends a key to the editor; while SHIFT is held it's wrapped in a SHIFT press, so arrows select */
     private fun sendKey(keyCode: Int) {
         val ic = currentInputConnection ?: return
         val now = SystemClock.uptimeMillis()
-        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, 0))
-        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, 0))
+        val withShift = shift.state == ModifierState.HELD
+        val metaState = if (withShift) KeyEvent.META_SHIFT_ON or KeyEvent.META_SHIFT_LEFT_ON else 0
+        if (withShift) ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, 0, metaState))
+        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, metaState))
+        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0, metaState))
+        if (withShift) ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, 0, 0))
+    }
+
+    /** Deletes the selection, or else the word (and the spaces after it) before the cursor */
+    private fun deleteWordBeforeCursor() {
+        val ic = currentInputConnection ?: return
+        if (!ic.getSelectedText(0).isNullOrEmpty()) {
+            ic.commitText("", 1)
+            return
+        }
+        val before = ic.getTextBeforeCursor(WORD_LOOKBEHIND, 0) ?: return
+        var start = before.length
+        while (start > 0 && before[start - 1].isWhitespace()) start--
+        // A word, or else a run of punctuation/symbols (which keeps emoji surrogate pairs together)
+        val isWordChar = { c: Char -> c.isLetterOrDigit() || c == '\'' || c == '’' }
+        val inWord = start > 0 && isWordChar(before[start - 1])
+        while (start > 0 && !before[start - 1].isWhitespace() && isWordChar(before[start - 1]) == inWord) start--
+        val count = before.length - start
+        if (count > 0) ic.deleteSurroundingText(count, 0)
     }
 
     private fun selectCurrentWord() {
@@ -353,6 +410,7 @@ class ImeService : InputMethodService() {
         val labels = buildList {
             if (shift.isLocked) add(getString(R.string.indicator_caps_lock))
             if (alt.isLocked) add(getString(R.string.indicator_alt_lock))
+            if (touchGestures?.cursorMode == true) add(getString(R.string.indicator_cursor_mode))
         }
         if (labels.isEmpty() && modifierIndicator == null) return
         val indicator = modifierIndicator ?: ModifierIndicator(this).also { modifierIndicator = it }
@@ -506,5 +564,10 @@ class ImeService : InputMethodService() {
             ?: return
 
         Toast.makeText(this, getString(R.string.ime_changed_toast, langDisplayName), Toast.LENGTH_SHORT).show()
+    }
+
+    private companion object {
+        // Longer than any word, short enough to stay cheap over the InputConnection
+        const val WORD_LOOKBEHIND = 64
     }
 }
